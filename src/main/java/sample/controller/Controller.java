@@ -37,7 +37,7 @@ import java.util.logging.Logger;
 
 public class Controller {
 
-    private CollectionTaskList taskListImpl = new CollectionTaskList();
+    private volatile CollectionTaskList taskListImpl = new CollectionTaskList();
 
     private Stage mainStage;
 
@@ -64,40 +64,11 @@ public class Controller {
 
     private static Map taskList = new HashMap<Integer, TimerTask>();
 
-    public static Socket socket;
+    //public static Socket socket;
     //public static ObjectInputStream in;
     //public static ObjectOutputStream out;
 
-    private class Resender extends Thread {
 
-        private boolean stoped;
-
-        /**
-         * Прекращает пересылку сообщений
-         */
-        public void setStop() {
-            stoped = true;
-        }
-
-        /**
-         * Считывает все сообщения от сервера и печатает их в консоль.
-         * Останавливается вызовом метода setStop()
-         *
-         * @see java.lang.Thread#run()
-         */
-        @Override
-        public void run() {
-            try {
-                while (!stoped) {
-                    String str = in.readLine();
-                    System.out.println(str);
-                }
-            } catch (IOException e) {
-                System.err.println("Ошибка при получении сообщения.");
-                e.printStackTrace();
-            }
-        }
-    }
 
     public void setMainStage(Stage mainStage) {
         this.mainStage = mainStage;
@@ -105,18 +76,23 @@ public class Controller {
 
     @FXML
     private void initialize() {
+        /*Resender resend = new Resender();
+        resend.start();*/
         //initializeStream();
         columnName.setCellValueFactory(new PropertyValueFactory<Task, String>("name"));
         columnTime.setCellValueFactory(new PropertyValueFactory<Task, String>("time"));
         //initListeners();
-        initializeData();
+        //initializeData();
+        sendData("load", new Task("Ilya", "23:59"));
+
+        tableTaskList.setItems(taskListImpl.getTaskList());
         initLoader();
 
 
 
     }
 
-    public static CollectionTaskList getCollection(String action, Task task) {
+    /*public static CollectionTaskList getCollection(String action, Task task) {
 
         CollectionTaskList collection = new CollectionTaskList();
         try(Socket socket = new Socket("localhost", 19000)) {
@@ -138,16 +114,29 @@ public class Controller {
             e.printStackTrace();
         }
         return collection;
+    }*/
+
+    public static void sendData(String action, Task task) {
+        HashMap<String, Task> map = new HashMap<>();
+        map.put(action, task);
+
+        try {
+            Main.out.writeObject(map);
+            Main.out.flush();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
     }
 
-    private void initializeData() {
+    /*private void initializeData() {
         CollectionTaskList taskListImpl_temp = new CollectionTaskList();
         taskListImpl_temp = getCollection("load", new Task("Ilya", "23:59"));
         fillData(taskListImpl_temp);
         tableTaskList.setItems(taskListImpl.getTaskList());
-    }
+    }*/
 
-    private void fillData(CollectionTaskList taskListImpl_temp) {
+    public void fillData(CollectionTaskList taskListImpl_temp) {
 
         //taskListImpl_temp.fillTestData();
 
@@ -161,6 +150,7 @@ public class Controller {
                     taskListImpl.add(task);
                 }
         }
+        //tableTaskList.setItems(taskListImpl.getTaskList());
     }
 
     private void initLoader() {
@@ -247,7 +237,9 @@ public class Controller {
                     System.out.println("wsfsf");
                     task = editDialogController.getTask();
                     if (isActual(task)) {
-                        fillData(getCollection("add", task));
+
+                        sendData("add", task);
+                        //fillData(getCollection("add", task));
                         //taskListImpl.add(task);
                         //setTask(task);
                         //sendData(task);
