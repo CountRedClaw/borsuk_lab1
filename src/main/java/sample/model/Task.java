@@ -18,8 +18,8 @@ public class Task implements Serializable {
         return taskId;
     }
 
-    public void setId(int id) {
-        this.taskId = id;
+    public static void setId(int id) {
+        Task.id = id;
     }
 
     public Task() {

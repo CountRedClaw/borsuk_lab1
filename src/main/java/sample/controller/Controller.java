@@ -35,11 +35,17 @@ import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import static sample.Main.USER;
+
 public class Controller {
 
+    public Label name;
     private volatile CollectionTaskList taskListImpl = new CollectionTaskList();
 
     private Stage mainStage;
+
+    /*@FXML
+    public static Label name;*/
 
     @FXML
     private TableView tableTaskList;
@@ -62,13 +68,51 @@ public class Controller {
 
     private Timer timer = new Timer();
 
-    private static Map taskList = new HashMap<Integer, TimerTask>();
+    private static Map<Integer, TimerTask> taskList = new HashMap<>();
 
     //public static Socket socket;
     //public static ObjectInputStream in;
     //public static ObjectOutputStream out;
 
+    private class Resender extends Thread {
 
+        private boolean stoped;
+
+        /**
+         * Прекращает пересылку сообщений
+         */
+        public void setStop() {
+            stoped = true;
+        }
+
+        /**
+         * Считывает все сообщения от сервера и печатает их в консоль.
+         * Останавливается вызовом метода setStop()
+         *
+         * @see java.lang.Thread#run()
+         */
+        @Override
+        public void run() {
+            try {
+                while (!stoped) {
+                    //Main.in = new ObjectInputStream(socket.getInputStream());
+
+                    //System.out.println("hello");
+                    CollectionTaskList temp = new CollectionTaskList();
+                    temp.getTaskList().clear();
+                    temp.getTaskList().addAll((List<Task>) Main.in.readObject());
+                    //Main.in.reset();
+                    //temp.getTaskList().addAll((List<Task>) Main.in.readObject());
+                    System.out.println(temp.getTaskList());
+                    fillData(temp);
+                    //taskListImpl.getTaskList().addAll((List<Task>) Main.in.readObject());
+                }
+            } catch (Exception e) {
+                System.err.println("Ошибка при получении сообщения.");
+                e.printStackTrace();
+            }
+        }
+    }
 
     public void setMainStage(Stage mainStage) {
         this.mainStage = mainStage;
@@ -76,8 +120,8 @@ public class Controller {
 
     @FXML
     private void initialize() {
-        /*Resender resend = new Resender();
-        resend.start();*/
+        Resender resend = new Resender();
+        resend.start();
         //initializeStream();
         columnName.setCellValueFactory(new PropertyValueFactory<Task, String>("name"));
         columnTime.setCellValueFactory(new PropertyValueFactory<Task, String>("time"));
@@ -136,7 +180,7 @@ public class Controller {
         tableTaskList.setItems(taskListImpl.getTaskList());
     }*/
 
-    public void fillData(CollectionTaskList taskListImpl_temp) {
+    private void fillData(CollectionTaskList taskListImpl_temp) {
 
         //taskListImpl_temp.fillTestData();
 
@@ -150,7 +194,8 @@ public class Controller {
                     taskListImpl.add(task);
                 }
         }
-        //tableTaskList.setItems(taskListImpl.getTaskList());
+        Task.setId(Collections.max(taskList.keySet()));
+        tableTaskList.setItems(taskListImpl.getTaskList());
     }
 
     private void initLoader() {
